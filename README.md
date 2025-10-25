@@ -1,7 +1,7 @@
 # FileShare - Secure File Sharing Application
 
 <div align="center">
-  <img src="client/public/Upload-PNG-HD-Image.png" alt="FileShare Logo" width="200"/>
+  <img src="/client/public/9797553.png" alt="FileShare Logo" width="200"/>
   <p><strong>Share Moments, Not Just Files</strong></p>
   <p>A modern, secure, and blazing-fast file-sharing platform with Google Drive-like interface</p>
 </div>
