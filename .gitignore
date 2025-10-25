@@ -1,0 +1,12 @@
+# Ignore node modules
+/node_modules
+/server/node_modules
+/client/node_modules
+
+# Ignore environment files
+.env
+/client/.env
+/server/.env
+
+# Ignore uploaded files
+/server/uploads/
