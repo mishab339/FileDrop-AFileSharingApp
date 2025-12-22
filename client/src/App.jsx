@@ -22,15 +22,16 @@ import FilePreview from './pages/FilePreview.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import OAuthSuccess from './pages/OAuthSuccess.jsx';
 
 function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col">
             <Navbar />
-            <main>
+            <main className="flex-1">
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<Home />} />
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/shared/:shareId" element={<SharedFile />} />
+                <Route path="/oauth-success" element={<OAuthSuccess />} />
                 
                 {/* Protected routes */}
                 <Route path="/folders" element={

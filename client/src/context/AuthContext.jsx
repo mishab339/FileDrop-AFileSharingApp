@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -98,6 +98,37 @@ export const AuthProvider = ({ children }) => {
 
     loadUser();
   }, []);
+
+  // OAuth login function (for Google OAuth success)
+  const oauthLogin = async (token) => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      // Set token in localStorage and axios headers
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Fetch user data
+      const res = await axios.get('/api/auth/me');
+      
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          user: res.data.user,
+          token: token
+        }
+      });
+      
+      toast.success('Successfully signed in with Google!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'OAuth login failed';
+      localStorage.removeItem('token');
+      dispatch({ type: 'AUTH_FAILURE', payload: message });
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
 
   // Login function
   const login = async (email, password) => {
@@ -213,6 +244,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     ...state,
     login,
+    oauthLogin,
     register,
     logout,
     updateUser,

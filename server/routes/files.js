@@ -25,10 +25,6 @@ router.post('/upload', auth, (req, res, next) => {
   });
 }, async (req, res) => {
   try {
-    console.log('Upload request received');
-    console.log('Files count:', req.files ? req.files.length : 0);
-    console.log('Folder ID:', req.body.folderId);
-    
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -39,8 +35,6 @@ router.post('/upload', auth, (req, res, next) => {
     const uploadedFiles = [];
     const totalSize = req.files.reduce((sum, file) => sum + file.size, 0);
     const folderId = req.body.folderId || null;
-    
-    console.log('Total upload size:', totalSize);
 
     // Check user's storage limit
     const user = await User.findById(req.user.id);
@@ -88,7 +82,7 @@ router.post('/upload', auth, (req, res, next) => {
             .jpeg({ quality: 80 })
             .toFile(thumbnailFullPath);
         } catch (error) {
-          console.error('Thumbnail generation error:', error);
+          // Thumbnail generation failed, continue without thumbnail
         }
       }
     }
@@ -248,8 +242,6 @@ router.get('/:id', auth, async (req, res) => {
 // @access  Private
 router.get('/preview/:id', auth, async (req, res) => {
   try {
-    console.log('Preview request for file ID:', req.params.id);
-    
     const file = await File.findOne({
       _id: req.params.id,
       uploader: req.user.id,
@@ -257,14 +249,11 @@ router.get('/preview/:id', auth, async (req, res) => {
     });
 
     if (!file) {
-      console.log('File not found for preview');
       return res.status(404).json({
         success: false,
         message: 'File not found'
       });
     }
-
-    console.log('File found for preview:', file.originalName, 'Type:', file.mimetype);
 
     if (file.isExpired()) {
       console.log('File has expired');
@@ -281,8 +270,6 @@ router.get('/preview/:id', auth, async (req, res) => {
       'text/plain', 'text/html', 'text/css', 'text/javascript', 'application/json'
     ];
 
-    console.log('File mimetype:', file.mimetype, 'Supported:', supportedTypes.includes(file.mimetype));
-
     if (!supportedTypes.includes(file.mimetype)) {
       return res.status(415).json({
         success: false,
@@ -290,15 +277,10 @@ router.get('/preview/:id', auth, async (req, res) => {
       });
     }
 
-    // Construct file path
-    let filePath;
-    if (path.isAbsolute(file.path)) {
-      filePath = file.path;
-    } else {
-      filePath = path.join(__dirname, '..', file.path);
-    }
-
-    console.log('Resolved file path for preview:', filePath);
+    // Construct absolute file path
+    const filePath = path.isAbsolute(file.path) 
+      ? file.path 
+      : path.join(__dirname, '..', file.path);
 
     if (!fs.existsSync(filePath)) {
       console.error('File not found on disk for preview:', filePath);

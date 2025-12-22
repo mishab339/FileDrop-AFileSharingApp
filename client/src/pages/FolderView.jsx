@@ -73,9 +73,6 @@ const FolderView = () => {
   const [downloadingFile, setDownloadingFile] = useState(null);
   const [downloadPassword, setDownloadPassword] = useState('');
 
-  // State to track which dropdown should reset
-  const [resetDropdown, setResetDropdown] = useState(null);
-
   const colors = [
     '#3b82f6', // blue
     '#10b981', // green
@@ -177,12 +174,9 @@ const FolderView = () => {
   };
 
   const handleDownload = async (fileId, fileName, hasPassword = false) => {
-    console.log('Download clicked - fileId:', fileId, 'hasPassword:', hasPassword);
-    
     // If file has password protection, show password modal
     if (hasPassword) {
       const file = files.find(f => f.id === fileId);
-      console.log('Password protected file found:', file);
       setDownloadingFile(file);
       setShowPasswordModal(true);
       return;
@@ -418,7 +412,7 @@ const FolderView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="loading-spinner mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Loading your files...</p>
@@ -433,7 +427,7 @@ const FolderView = () => {
         <title>My Files - FileShare</title>
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
           <div className="mb-8">
@@ -457,7 +451,7 @@ const FolderView = () => {
                     onClick={() => handleBreadcrumbClick(null)}
                     className="flex items-center text-gray-600 hover:text-primary-600 transition-colors duration-200 font-medium"
                   >
-                    <FiFolder className="w-4 h-4" />
+                    <FiHome className="w-4 h-4" />
                     <span className="ml-2">My Files</span>
                   </button>
                   
@@ -483,18 +477,18 @@ const FolderView = () => {
             <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-4">
               <button
                 onClick={() => setShowCreateFolder(true)}
-                className="btn-primary flex items-center justify-center gap-2 text-sm sm:text-base py-3 px-4 sm:px-5"
+                className="btn-primary flex items-center justify-center space-x-2 text-sm sm:text-base py-2.5 sm:py-3 px-4 sm:px-5"
               >
-                <FiPlus className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span>New Folder</span>
+                <FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="truncate">New Folder</span>
               </button>
               
               <button
                 onClick={() => navigate('/upload', { state: { folderId: currentFolderId } })}
-                className="btn-secondary flex items-center justify-center gap-2 text-sm sm:text-base py-3 px-4 sm:px-5"
+                className="btn-secondary flex items-center justify-center space-x-2 text-sm sm:text-base py-2.5 sm:py-3 px-4 sm:px-5"
               >
-                <FiUpload className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span>Upload Files</span>
+                <FiUpload className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="truncate">Upload Files</span>
               </button>
             </div>
 
@@ -639,17 +633,17 @@ const FolderView = () => {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                       <button
                         onClick={() => setShowCreateFolder(true)}
-                        className="btn-primary flex items-center justify-center gap-2"
+                        className="btn-primary"
                       >
-                        <FiPlus className="w-5 h-5 flex-shrink-0" />
-                        <span>Create Folder</span>
+                        <FiPlus className="w-5 h-5 mr-2" />
+                        Create Folder
                       </button>
                       <button
                         onClick={() => navigate('/upload', { state: { folderId: currentFolderId } })}
-                        className="btn-secondary flex items-center justify-center gap-2"
+                        className="btn-secondary"
                       >
-                        <FiUpload className="w-5 h-5 flex-shrink-0" />
-                        <span>Upload Files</span>
+                        <FiUpload className="w-5 h-5 mr-2" />
+                        Upload Files
                       </button>
                     </div>
                   </>
@@ -657,57 +651,85 @@ const FolderView = () => {
               </div>
             </div>
           ) : (
-            <div className={viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4' : 'space-y-2'}>
+            <div className={viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'space-y-3'}>
               {/* Folders */}
               {filteredFolders.map((folder) => (
                 <div
                   key={folder.id}
                   className={viewMode === 'grid' 
-                    ? 'relative file-card cursor-pointer animate-fade-in-up hover:scale-[1.02] group'
-                    : 'relative file-card animate-fade-in-up group'
+                    ? 'relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 cursor-pointer animate-fade-in-up transition-all duration-300 group'
+                    : 'relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg hover:shadow-xl cursor-pointer animate-fade-in-up transition-all duration-300 group'
                   }
                   onClick={() => handleFolderClick(folder.id)}
-                  onMouseLeave={() => setResetDropdown(folder.id)}
                 >
                   {viewMode === 'grid' ? (
                     // Grid View Layout
-                    <div className="text-center p-2 sm:p-3">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ backgroundColor: folder.color }}>
-                        <FiFolder className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    <div className="text-center p-4 sm:p-6">
+                      {/* Color-coded accent bar */}
+                      <div 
+                        className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                        style={{ backgroundColor: folder.color }}
+                      />
+                      
+                      <div className="w-14 h-14 sm:w-18 sm:h-18 mx-auto mb-4 sm:mb-5 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 bg-gradient-to-br from-gray-50 to-gray-100">
+                        <FiFolder className="w-7 h-7 sm:w-9 sm:h-9" style={{ color: folder.color }} />
                       </div>
-                      <h3 className="text-xs sm:text-sm font-semibold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200 mb-0.5 px-1">
+                      
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200 mb-2 px-1">
                         {folder.name}
                       </h3>
-                      <p className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                      
+                      <p className="text-xs sm:text-sm text-gray-500 font-medium">
                         {format(new Date(folder.createdAt), 'MMM d, yyyy')}
                       </p>
+                      
+                      {/* Subtle glow effect on hover */}
+                      <div 
+                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none"
+                        style={{ 
+                          background: `radial-gradient(circle at center, ${folder.color}40, transparent 70%)`,
+                          filter: 'blur(20px)'
+                        }}
+                      />
                     </div>
                   ) : (
                     // List View Layout
-                    <div className="flex items-center justify-between p-3 sm:p-4">
-                      <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ backgroundColor: folder.color }}>
-                          <FiFolder className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    <div className="flex items-center justify-between p-4 sm:p-5">
+                      {/* Color-coded left border */}
+                      <div 
+                        className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
+                        style={{ backgroundColor: folder.color }}
+                      />
+                      
+                      <div className="flex items-center space-x-4 sm:space-x-5 flex-1 min-w-0 ml-3">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 bg-gradient-to-br from-gray-50 to-gray-100">
+                          <FiFolder className="w-6 h-6 sm:w-7 sm:h-7" style={{ color: folder.color }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200">
                             {folder.name}
                           </h3>
-                          <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">
+                          <p className="text-sm sm:text-base text-gray-500 font-medium truncate">
                             {format(new Date(folder.createdAt), 'MMM d, yyyy')}
                           </p>
                         </div>
                       </div>
+                      
+                      {/* Subtle glow effect on hover */}
+                      <div 
+                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-15 transition-opacity duration-300 pointer-events-none"
+                        style={{ 
+                          background: `linear-gradient(90deg, ${folder.color}20, transparent 50%)`,
+                          filter: 'blur(15px)'
+                        }}
+                      />
                     </div>
                   )}
                   
                   {/* Menu Button */}
-                  <div 
-                    className="absolute top-1 right-1 sm:top-2 sm:right-2 z-50"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                      <DropdownMenu key={resetDropdown === folder.id ? `reset-${folder.id}` : folder.id}>
+                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-1.5 shadow-lg border border-white/40">
+                      <DropdownMenu>
                         <DropdownItem 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -729,92 +751,94 @@ const FolderView = () => {
                 <div
                   key={file.id}
                   className={viewMode === 'grid' 
-                    ? 'relative file-card cursor-pointer animate-fade-in-up hover:scale-[1.02] group'
-                    : 'relative file-card cursor-pointer animate-fade-in-up group'
+                    ? 'relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 cursor-pointer animate-fade-in-up transition-all duration-300 group'
+                    : 'relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg hover:shadow-xl cursor-pointer animate-fade-in-up transition-all duration-300 group'
                   }
                   onClick={() => navigate(`/files/${file.id}`)}
-                  onMouseLeave={() => setResetDropdown(file.id)}
                 >
                   {viewMode === 'grid' ? (
                     // Grid View Layout
-                    <div className="text-center p-2 sm:p-3">
-                      <div className="mb-2 sm:mb-3 flex justify-center">
-                        <div className="p-2 sm:p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-inner">
+                    <div className="text-center p-4 sm:p-6">
+                      {/* File preview area */}
+                      <div className="mb-4 sm:mb-5 flex justify-center">
+                        <div className="p-4 sm:p-5 bg-gradient-to-br from-gray-50/80 to-gray-100/80 backdrop-blur-sm rounded-2xl shadow-inner border border-gray-200/50 group-hover:scale-105 transition-transform duration-300">
                           <FileIcon mimetype={file.mimetype} size="lg" />
                         </div>
                       </div>
-                      <h3 className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200 mb-1.5 px-1">
+                      
+                      <h3 className="text-sm sm:text-base font-bold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200 mb-3 px-1 sm:px-2">
                         {file.originalName}
                       </h3>
-                      <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-2 sm:mb-3 truncate px-1">
+                      
+                      <p className="text-xs sm:text-sm text-gray-500 font-medium mb-4 truncate px-1">
                         {file.sizeFormatted} • {format(new Date(file.createdAt), 'MMM d, yyyy')}
                       </p>
                       
                       {/* File status indicators - responsive */}
-                      <div className="flex flex-wrap justify-center items-center gap-1 mb-2 sm:mb-3 px-1">
+                      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 mb-4">
                         {file.isPublic ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
-                            <FiGlobe className="w-2.5 h-2.5 sm:w-3 sm:h-3 sm:mr-1" />
+                          <span className="inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-xs font-semibold bg-green-100/80 text-green-700 border border-green-200/60 backdrop-blur-sm">
+                            <FiGlobe className="w-3 h-3 sm:mr-1" />
                             <span className="hidden sm:inline">Public</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
-                            <FiLock className="w-2.5 h-2.5 sm:w-3 sm:h-3 sm:mr-1" />
+                          <span className="inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-xs font-semibold bg-gray-100/80 text-gray-700 border border-gray-200/60 backdrop-blur-sm">
+                            <FiLock className="w-3 h-3 sm:mr-1" />
                             <span className="hidden sm:inline">Private</span>
                           </span>
                         )}
                         
                         {file.password && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">
-                            <FiLock className="w-2.5 h-2.5 sm:w-3 sm:h-3 sm:mr-1" />
+                          <span className="inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-xs font-semibold bg-yellow-100/80 text-yellow-700 border border-yellow-200/60 backdrop-blur-sm">
+                            <FiLock className="w-3 h-3 sm:mr-1" />
                             <span className="hidden sm:inline">Protected</span>
                           </span>
                         )}
                       </div>
 
                       {/* Stats */}
-                      <div className="flex justify-center space-x-2 sm:space-x-3 text-[10px] sm:text-xs text-gray-500">
-                        <span className="flex items-center">
-                          <FiDownload className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                      <div className="flex justify-center space-x-4 text-xs text-gray-500">
+                        <span className="flex items-center bg-gray-50/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-gray-200/50">
+                          <FiDownload className="w-3 h-3 mr-1" />
                           {file.downloadCount}
                         </span>
-                        <span className="flex items-center">
-                          <FiEye className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                        <span className="flex items-center bg-gray-50/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-gray-200/50">
+                          <FiEye className="w-3 h-3 mr-1" />
                           {file.viewCount}
                         </span>
                       </div>
                     </div>
                   ) : (
                     // List View Layout
-                    <div className="flex items-center justify-between p-3 sm:p-4">
-                      <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
-                        <div className="flex-shrink-0">
+                    <div className="flex items-center justify-between p-4 sm:p-5">
+                      <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                        <div className="flex-shrink-0 p-2 bg-gradient-to-br from-gray-50/80 to-gray-100/80 backdrop-blur-sm rounded-xl border border-gray-200/50 group-hover:scale-105 transition-transform duration-300">
                           <FileIcon mimetype={file.mimetype} size="md" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate group-hover:text-primary-700 transition-colors duration-200">
                             {file.originalName}
                           </h3>
-                          <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">
+                          <p className="text-sm sm:text-base text-gray-500 font-medium truncate mb-2">
                             {file.sizeFormatted} • {format(new Date(file.createdAt), 'MMM d, yyyy')}
                           </p>
                           
                           {/* File status indicators - responsive */}
-                          <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             {file.isPublic ? (
-                              <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                              <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-semibold bg-green-100/80 text-green-700 border border-green-200/60 backdrop-blur-sm">
                                 <FiGlobe className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                                 <span className="hidden xs:inline">Public</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                              <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-semibold bg-gray-100/80 text-gray-700 border border-gray-200/60 backdrop-blur-sm">
                                 <FiLock className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                                 <span className="hidden xs:inline">Private</span>
                               </span>
                             )}
                             
                             {file.password && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                              <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-semibold bg-yellow-100/80 text-yellow-700 border border-yellow-200/60 backdrop-blur-sm">
                                 <FiLock className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                                 <span className="hidden xs:inline">Protected</span>
                               </span>
@@ -823,12 +847,12 @@ const FolderView = () => {
                         </div>
                         
                         {/* Stats - hidden on very small screens */}
-                        <div className="hidden sm:flex items-center space-x-3 text-xs text-gray-500">
-                          <span className="flex items-center">
+                        <div className="hidden sm:flex items-center space-x-3 text-sm text-gray-500">
+                          <span className="flex items-center bg-gray-50/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-gray-200/50">
                             <FiDownload className="w-3 h-3 mr-1" />
                             {file.downloadCount}
                           </span>
-                          <span className="flex items-center">
+                          <span className="flex items-center bg-gray-50/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-gray-200/50">
                             <FiEye className="w-3 h-3 mr-1" />
                             {file.viewCount}
                           </span>
@@ -837,13 +861,10 @@ const FolderView = () => {
                     </div>
                   )}
                   
-                  {/* Menu Button */}
-                  <div 
-                    className="absolute top-1 right-1 sm:top-2 sm:right-2 z-50"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                      <DropdownMenu key={resetDropdown === file.id ? `reset-${file.id}` : file.id}>
+                  {/* Menu Button - Integrated design */}
+                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-1.5 shadow-lg border border-white/40">
+                      <DropdownMenu>
                         <DropdownItem onClick={(e) => {
                           e.stopPropagation();
                           handleDownload(file.id, file.originalName, !!file.password);

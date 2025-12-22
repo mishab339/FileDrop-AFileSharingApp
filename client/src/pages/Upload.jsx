@@ -42,7 +42,7 @@ const Upload = () => {
     
     setFiles(prev => [...prev, ...newFiles]);
   }, []);
-  console.log(onDrop)
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {

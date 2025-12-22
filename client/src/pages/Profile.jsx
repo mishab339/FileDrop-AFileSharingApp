@@ -10,7 +10,10 @@ import {
   FiSave, 
   FiX,
   FiCheckCircle,
-  FiAlertCircle
+  FiAlertCircle,
+  FiLock,
+  FiEye,
+  FiEyeOff
 } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -24,11 +27,39 @@ const Profile = () => {
   });
   const [loading, setLoading] = useState(false);
 
+  // Change password state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordData({
+      ...passwordData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
   };
 
   const handleSave = async () => {
@@ -49,6 +80,58 @@ const Profile = () => {
       toast.error('Failed to update profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('All password fields are required');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New password and confirm password do not match');
+      return;
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      toast.error('New password must be different from current password');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await axios.put('/api/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      toast.success('Password changed successfully');
+      setShowChangePassword(false);
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswords({
+        current: false,
+        new: false,
+        confirm: false
+      });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      const message = error.response?.data?.message || 'Failed to change password';
+      toast.error(message);
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -79,7 +162,7 @@ const Profile = () => {
         <meta name="description" content="Manage your FileShare profile, storage settings, and account preferences." />
       </Helmet>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
@@ -92,9 +175,9 @@ const Profile = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profile Information */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
                 {/* Header */}
-                <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 bg-gray-50">
+                <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 bg-white/60">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                     <div>
                       <h2 className="text-lg sm:text-xl font-bold text-gray-900">Profile Information</h2>
@@ -148,7 +231,7 @@ const Profile = () => {
                           placeholder="Enter your full name"
                         />
                       ) : (
-                        <div className="flex items-center space-x-3 sm:space-x-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center space-x-3 sm:space-x-4 p-4 bg-gray-50/80 rounded-lg border border-gray-200">
                           <div className="flex-shrink-0">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                               <FiUser className="w-6 h-6 text-gray-600" />
@@ -170,7 +253,7 @@ const Profile = () => {
                         Email Address
                       </label>
                       <div className="space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-gray-50/80 rounded-lg border border-gray-200">
                           <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                             <div className="flex-shrink-0">
                               <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -210,7 +293,7 @@ const Profile = () => {
                       <label className="block text-sm font-semibold text-gray-700">
                         Account Status
                       </label>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-gray-50/80 rounded-lg border border-gray-200">
                         <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
                           <div className="flex-shrink-0">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -238,9 +321,9 @@ const Profile = () => {
             </div>
 
             {/* Storage Information */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
+                <div className="px-6 py-4 border-b border-gray-200 bg-white/60">
                   <h2 className="text-lg font-medium text-gray-900">Storage Usage</h2>
                 </div>
 
@@ -313,16 +396,35 @@ const Profile = () => {
               </div>
 
               {/* Account Actions */}
-              <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
+                <div className="px-6 py-4 border-b border-gray-200 bg-white/60">
                   <h2 className="text-lg font-medium text-gray-900">Account Actions</h2>
                 </div>
 
                 <div className="px-6 py-6">
                   <div className="space-y-3">
-                    <button className="w-full btn-secondary text-left">
-                      Change Password
-                    </button>
+                    {user?.googleId ? (
+                      <div className="p-4 bg-blue-50/80 backdrop-blur-sm rounded-lg border border-blue-200">
+                        <div className="flex items-start space-x-3">
+                          <FiAlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">Google Account</p>
+                            <p className="text-xs text-blue-700 mt-1">
+                              Password changes are managed through your Google account. 
+                              Visit Google Account settings to update your password.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setShowChangePassword(true)}
+                        className="w-full btn-secondary text-left flex items-center"
+                      >
+                        <FiLock className="w-4 h-4 mr-3" />
+                        Change Password
+                      </button>
+                    )}
                     <button className="w-full btn-secondary text-left">
                       Download Data
                     </button>
@@ -339,6 +441,169 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl max-w-md w-full border border-white/20">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <FiLock className="w-5 h-5 mr-2" />
+                  Change Password
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowChangePassword(false);
+                    setPasswordData({
+                      currentPassword: '',
+                      newPassword: '',
+                      confirmPassword: ''
+                    });
+                    setShowPasswords({
+                      current: false,
+                      new: false,
+                      confirm: false
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {/* Current Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      className="input-field pr-12"
+                      placeholder="Enter your current password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('current')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPasswords.current ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.new ? 'text' : 'password'}
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      className="input-field pr-12"
+                      placeholder="Enter your new password"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('new')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPasswords.new ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Password must be at least 6 characters long
+                  </p>
+                </div>
+
+                {/* Confirm New Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      className="input-field pr-12"
+                      placeholder="Confirm your new password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('confirm')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPasswords.confirm ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Password Match Indicator */}
+                {passwordData.newPassword && passwordData.confirmPassword && (
+                  <div className="flex items-center space-x-2 text-sm">
+                    {passwordData.newPassword === passwordData.confirmPassword ? (
+                      <>
+                        <FiCheckCircle className="w-4 h-4 text-green-600" />
+                        <span className="text-green-600">Passwords match</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiAlertCircle className="w-4 h-4 text-red-600" />
+                        <span className="text-red-600">Passwords do not match</span>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangePassword(false);
+                      setPasswordData({
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                      });
+                      setShowPasswords({
+                        current: false,
+                        new: false,
+                        confirm: false
+                      });
+                    }}
+                    className="flex-1 btn-secondary"
+                    disabled={passwordLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 btn-primary"
+                    disabled={passwordLoading || passwordData.newPassword !== passwordData.confirmPassword}
+                  >
+                    {passwordLoading ? 'Changing...' : 'Change Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

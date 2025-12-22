@@ -263,8 +263,6 @@ router.put('/users/:id', async (req, res) => {
 // @access  Private (Admin only)
 router.put('/files/:id/soft-delete', async (req, res) => {
   try {
-    console.log('Admin soft delete request for file ID:', req.params.id);
-    
     const file = await File.findById(req.params.id);
     if (!file) {
       return res.status(404).json({
@@ -278,8 +276,6 @@ router.put('/files/:id/soft-delete', async (req, res) => {
     file.deletedAt = new Date();
     file.deletedBy = req.user.id;
     await file.save();
-
-    console.log('File soft deleted:', file.originalName);
 
     res.json({
       success: true,
@@ -300,8 +296,6 @@ router.put('/files/:id/soft-delete', async (req, res) => {
 // @access  Private (Admin only)
 router.delete('/files/:id/permanent', async (req, res) => {
   try {
-    console.log('Admin permanent delete request for file ID:', req.params.id);
-    
     const file = await File.findById(req.params.id);
     if (!file) {
       return res.status(404).json({

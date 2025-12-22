@@ -14,7 +14,7 @@ import {
   FiHardDrive,
   FiLock,
   FiGlobe,
-  FiX
+  FiRefreshCw
 } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -35,10 +35,6 @@ const FilePreview = () => {
     description: '',
     tags: []
   });
-
-  // Password modal state for downloads
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [downloadPassword, setDownloadPassword] = useState('');
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -72,14 +68,13 @@ const FilePreview = () => {
       const fileType = response.data.file.mimetype;
       if (fileType.startsWith('image/') || fileType === 'application/pdf' || fileType.startsWith('text/')) {
         try {
-          console.log('Attempting to load preview for file:', fileId, 'type:', fileType);
           const previewResponse = await axios.get(`/api/files/preview/${fileId}`, {
             responseType: 'blob'
           });
-          console.log('Preview response received, size:', previewResponse.data.size);
+
           const imageBlob = new Blob([previewResponse.data], { type: fileType });
           const imageUrl = URL.createObjectURL(imageBlob);
-          console.log('Blob URL created:', imageUrl);
+
           setPreviewUrl(imageUrl);
         } catch (previewError) {
           console.error('Error loading preview:', previewError.response?.status, previewError.response?.data);
@@ -87,13 +82,12 @@ const FilePreview = () => {
           // Fallback: try using the download endpoint for images
           if (fileType.startsWith('image/')) {
             try {
-              console.log('Trying fallback download endpoint for image preview');
               const downloadResponse = await axios.post(`/api/files/download/${fileId}`, {}, {
                 responseType: 'blob'
               });
               const imageBlob = new Blob([downloadResponse.data], { type: fileType });
               const imageUrl = URL.createObjectURL(imageBlob);
-              console.log('Fallback blob URL created:', imageUrl);
+
               setPreviewUrl(imageUrl);
             } catch (downloadError) {
               console.error('Fallback download also failed:', downloadError);
@@ -131,50 +125,7 @@ const FilePreview = () => {
       toast.success('File downloaded successfully');
     } catch (error) {
       console.error('Error downloading file:', error);
-      
-      // If 401 error, it means password is required
-      if (error.response?.status === 401) {
-        setShowPasswordModal(true);
-      } else {
-        toast.error('Failed to download file');
-      }
-    }
-  };
-
-  const handlePasswordDownload = async (e) => {
-    e.preventDefault();
-    
-    if (!downloadPassword.trim()) {
-      toast.error('Please enter a password');
-      return;
-    }
-
-    try {
-      const response = await axios.post(`/api/files/download/${fileId}`, {
-        password: downloadPassword
-      }, {
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', file.originalName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('File downloaded successfully');
-      setShowPasswordModal(false);
-      setDownloadPassword('');
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      if (error.response?.status === 401) {
-        toast.error('Incorrect password');
-      } else {
-        toast.error('Failed to download file');
-      }
+      toast.error('Failed to download file');
     }
   };
 
@@ -193,27 +144,6 @@ const FilePreview = () => {
       tags: file.tags || []
     });
     setShowEditModal(true);
-  };
-
-  const handleAddTag = () => {
-    setEditForm(prev => ({
-      ...prev,
-      tags: [...prev.tags, '']
-    }));
-  };
-
-  const handleRemoveTag = (index) => {
-    setEditForm(prev => ({
-      ...prev,
-      tags: prev.tags.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleTagChange = (index, value) => {
-    setEditForm(prev => ({
-      ...prev,
-      tags: prev.tags.map((tag, i) => i === index ? value : tag)
-    }));
   };
 
   const handleEditSubmit = async (e) => {
@@ -245,16 +175,7 @@ const FilePreview = () => {
       fetchFileDetails(); // Refresh file data
     } catch (error) {
       console.error('Error updating file:', error);
-      
-      // Show detailed error message
-      if (error.response?.data?.errors) {
-        const errorMessages = error.response.data.errors.map(err => err.message).join(', ');
-        toast.error(`Validation failed: ${errorMessages}`);
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Failed to update file');
-      }
+      toast.error(error.response?.data?.message || 'Failed to update file');
     }
   };
 
@@ -310,53 +231,51 @@ const FilePreview = () => {
         <title>{file.originalName} - FileShare</title>
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
           {/* Header */}
-          <div className="mb-8">
-            {/* Back Button and Title */}
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/folders')}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all duration-200 flex-shrink-0"
-                aria-label="Back to files"
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all duration-200"
               >
                 <FiArrowLeft className="w-5 h-5" />
               </button>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">{file.originalName}</h1>
-                <p className="text-sm sm:text-base text-gray-600">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 truncate">{file.originalName}</h1>
+                <p className="text-gray-600">
                   {formatBytes(file.size)} • {format(new Date(file.createdAt), 'MMM d, yyyy')}
                 </p>
               </div>
             </div>
 
-            {/* Action Buttons - Responsive Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-3">
               <button
                 onClick={handleDownload}
-                className="btn-primary flex items-center justify-center space-x-2 text-sm sm:text-base py-2.5 sm:py-3 px-3 sm:px-4"
+                className="btn-primary flex items-center space-x-2"
               >
                 <FiDownload className="w-4 h-4" />
                 <span>Download</span>
               </button>
               <button
                 onClick={handleShare}
-                className="btn-secondary flex items-center justify-center space-x-2 text-sm sm:text-base py-2.5 sm:py-3 px-3 sm:px-4"
+                className="btn-secondary flex items-center space-x-2"
               >
                 <FiShare2 className="w-4 h-4" />
                 <span>Share</span>
               </button>
               <button
                 onClick={handleEdit}
-                className="btn-secondary flex items-center justify-center space-x-2 text-sm sm:text-base py-2.5 sm:py-3 px-3 sm:px-4"
+                className="btn-secondary flex items-center space-x-2"
               >
                 <FiEdit className="w-4 h-4" />
                 <span>Edit</span>
               </button>
               <button
                 onClick={handleDelete}
-                className="btn-danger flex items-center justify-center space-x-2 text-sm sm:text-base py-2.5 sm:py-3 px-3 sm:px-4"
+                className="btn-danger flex items-center space-x-2"
               >
                 <FiTrash2 className="w-4 h-4" />
                 <span>Delete</span>
@@ -367,7 +286,7 @@ const FilePreview = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Preview Section */}
             <div className="lg:col-span-2">
-              <div className="card">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
                 <div className="text-center">
                   {previewUrl ? (
                     <div className="relative">
@@ -376,57 +295,91 @@ const FilePreview = () => {
                           src={previewUrl}
                           alt={file.originalName}
                           className="max-w-full max-h-96 mx-auto rounded-lg shadow-md"
-                          onError={(e) => {
-                            console.error('Image failed to load:', e);
+                          onError={() => {
                             setPreviewUrl(null);
                           }}
                           onLoad={() => {
-                            console.log('Image loaded successfully');
+                            // Image loaded successfully
                           }}
                         />
                       ) : file.mimetype === 'application/pdf' ? (
-                        <iframe
-                          src={previewUrl}
-                          className="w-full h-96 rounded-lg shadow-md"
-                          title={file.originalName}
-                          onError={() => {
-                            console.error('PDF failed to load');
-                            setPreviewUrl(null);
-                          }}
-                        />
+                        <div className="relative">
+                          <iframe
+                            src={previewUrl}
+                            className="w-full h-96 rounded-lg shadow-md border border-gray-200"
+                            title={file.originalName}
+                            onError={() => {
+                              setPreviewUrl(null);
+                            }}
+                          />
+                          <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded text-xs">
+                            PDF Preview
+                          </div>
+                        </div>
                       ) : file.mimetype.startsWith('text/') ? (
-                        <iframe
-                          src={previewUrl}
-                          className="w-full h-96 rounded-lg shadow-md border"
-                          title={file.originalName}
-                          onError={() => {
-                            console.error('Text file failed to load');
-                            setPreviewUrl(null);
-                          }}
-                        />
+                        <div className="relative">
+                          <iframe
+                            src={previewUrl}
+                            className="w-full h-96 rounded-lg shadow-md border border-gray-200 bg-white"
+                            title={file.originalName}
+                            onError={() => {
+                              setPreviewUrl(null);
+                            }}
+                          />
+                          <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded text-xs">
+                            Text Preview
+                          </div>
+                        </div>
                       ) : null}
                     </div>
                   ) : (
                     <div className="py-16">
-                      <FileIcon mimetype={file.mimetype} size="lg" />
+                      <div className="mb-6">
+                        <FileIcon mimetype={file.mimetype} size="lg" />
+                      </div>
                       <h3 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
                         {file.originalName}
                       </h3>
-                      <p className="text-gray-600 mb-4">
-                        {(file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || file.mimetype.startsWith('text/'))
-                          ? 'Preview failed to load'
-                          : 'Preview not available for this file type'
-                        }
-                      </p>
-                      {(file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || file.mimetype.startsWith('text/')) && (
+                      
+                      {/* Preview Status Message */}
+                      <div className="mb-6">
+                        {(file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || file.mimetype.startsWith('text/')) ? (
+                          <div className="bg-yellow-50/80 backdrop-blur-sm border border-yellow-200 rounded-lg p-4 mb-4">
+                            <p className="text-yellow-800 font-medium">Preview not available</p>
+                            <p className="text-yellow-700 text-sm mt-1">
+                              The preview failed to load. You can download the file to view it.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-blue-50/80 backdrop-blur-sm border border-blue-200 rounded-lg p-4 mb-4">
+                            <p className="text-blue-800 font-medium">Preview not supported</p>
+                            <p className="text-blue-700 text-sm mt-1">
+                              This file type doesn't support preview. Download to view the content.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button
                           onClick={handleDownload}
-                          className="btn-primary"
+                          className="btn-primary flex items-center justify-center"
                         >
                           <FiDownload className="w-4 h-4 mr-2" />
-                          Download to View
+                          Download File
                         </button>
-                      )}
+                        
+                        {(file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || file.mimetype.startsWith('text/')) && (
+                          <button
+                            onClick={() => window.location.reload()}
+                            className="btn-secondary flex items-center justify-center"
+                          >
+                            <FiRefreshCw className="w-4 h-4 mr-2" />
+                            Retry Preview
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -436,7 +389,7 @@ const FilePreview = () => {
             {/* Details Section */}
             <div className="space-y-6">
               {/* File Info */}
-              <div className="card">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">File Details</h3>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
@@ -468,7 +421,7 @@ const FilePreview = () => {
               </div>
 
               {/* Privacy & Access */}
-              <div className="card">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Privacy & Access</h3>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
@@ -510,15 +463,15 @@ const FilePreview = () => {
               </div>
 
               {/* Statistics */}
-              <div className="card">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <div className="text-center p-3 bg-gray-50/80 rounded-lg">
                     <FiDownload className="w-6 h-6 text-primary-600 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-gray-900">{file.downloadCount}</p>
                     <p className="text-sm text-gray-600">Downloads</p>
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <div className="text-center p-3 bg-gray-50/80 rounded-lg">
                     <FiEye className="w-6 h-6 text-accent-600 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-gray-900">{file.viewCount}</p>
                     <p className="text-sm text-gray-600">Views</p>
@@ -533,220 +486,71 @@ const FilePreview = () => {
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Edit File Settings</h2>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <FiX className="w-6 h-6" />
-                </button>
-              </div>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Edit File Settings</h2>
 
-              <form onSubmit={handleEditSubmit}>
-                {/* File Info */}
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <FileIcon mimetype={file.mimetype} size="md" />
-                    <div>
-                      <h3 className="font-medium text-gray-900">{file.originalName}</h3>
-                      <p className="text-sm text-gray-500">{formatBytes(file.size)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Visibility */}
-                <div className="mb-6">
+            <form onSubmit={handleEditSubmit}>
+              <div className="space-y-4">
+                {/* Public/Private Toggle */}
+                <div>
                   <label className="flex items-center space-x-3">
                     <input
                       type="checkbox"
                       checked={editForm.isPublic}
-                      onChange={(e) => setEditForm({ ...editForm, isPublic: e.target.checked })}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      onChange={(e) => setEditForm(prev => ({ ...prev, isPublic: e.target.checked }))}
+                      className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                     />
-                    <div>
-                      <span className="font-medium text-gray-900">Make file public</span>
-                      <p className="text-sm text-gray-500">Anyone with the link can access this file</p>
-                    </div>
+                    <span className="text-sm font-medium text-gray-700">Make file public</span>
                   </label>
                 </div>
 
                 {/* Password Protection */}
-                <div className="mb-6">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password Protection (Optional)
+                    Password Protection (optional)
                   </label>
-                  <div className="flex items-center space-x-2">
-                    <FiLock className="text-gray-400" />
-                    <input
-                      type="password"
-                      value={editForm.password}
-                      onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                      placeholder="Enter password to protect file"
-                      className="input-field flex-1"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Leave empty to remove password or keep existing password
-                  </p>
+                  <input
+                    type="password"
+                    value={editForm.password}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Enter password to protect file"
+                    className="input-field"
+                  />
                 </div>
 
                 {/* Expiration Date */}
-                <div className="mb-6">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Expiration Date (Optional)
+                    Expiration Date (optional)
                   </label>
-                  <div className="flex items-center space-x-2">
-                    <FiClock className="text-gray-400" />
-                    <input
-                      type="datetime-local"
-                      value={editForm.expiresAt}
-                      onChange={(e) => setEditForm({ ...editForm, expiresAt: e.target.value })}
-                      className="input-field flex-1"
-                      min={new Date().toISOString().slice(0, 16)}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    File will be automatically deleted after this date
-                  </p>
+                  <input
+                    type="datetime-local"
+                    value={editForm.expiresAt}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, expiresAt: e.target.value }))}
+                    className="input-field"
+                  />
                 </div>
 
                 {/* Description */}
-                <div className="mb-6">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description (Optional)
+                    Description (optional)
                   </label>
                   <textarea
                     value={editForm.description}
-                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Add a description for this file"
                     rows={3}
-                    maxLength={500}
-                    className="input-field w-full"
+                    className="input-field resize-none"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {editForm.description.length}/500 characters
-                  </p>
                 </div>
-
-                {/* Tags */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tags (Optional)
-                  </label>
-                  {editForm.tags.map((tag, index) => (
-                    <div key={index} className="flex items-center space-x-2 mb-2">
-                      <input
-                        type="text"
-                        value={tag}
-                        onChange={(e) => handleTagChange(index, e.target.value)}
-                        placeholder="Enter tag"
-                        className="input-field flex-1"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    className="btn-secondary text-sm mt-2"
-                  >
-                    + Add Tag
-                  </button>
-                </div>
-
-                {/* Share Link */}
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <label className="block text-sm font-medium text-blue-900 mb-2">
-                    Share Link
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={`${window.location.origin}/shared/${file.shareId}`}
-                      readOnly
-                      className="input-field flex-1 bg-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      className="btn-secondary"
-                    >
-                      <FiShare2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowEditModal(false)}
-                    className="btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Password Modal for Downloads */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Password Protected</h2>
-              <button
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setDownloadPassword('');
-                }}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
-              >
-                <FiX className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-gray-600 mb-6">
-              This file is password protected. Please enter the password to download.
-            </p>
-
-            <form onSubmit={handlePasswordDownload}>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={downloadPassword}
-                  onChange={(e) => setDownloadPassword(e.target.value)}
-                  placeholder="Enter file password"
-                  className="input-field"
-                  autoFocus
-                />
               </div>
 
-              <div className="flex justify-end space-x-3">
+              {/* Modal Actions */}
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setDownloadPassword('');
-                  }}
+                  onClick={() => setShowEditModal(false)}
                   className="btn-secondary"
                 >
                   Cancel
@@ -755,8 +559,7 @@ const FilePreview = () => {
                   type="submit"
                   className="btn-primary"
                 >
-                  <FiDownload className="w-4 h-4 mr-2" />
-                  Download
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -767,5 +570,4 @@ const FilePreview = () => {
   );
 };
 
-export default FilePreview;
-
+export default FilePreview
